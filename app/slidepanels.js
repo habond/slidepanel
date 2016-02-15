@@ -11,72 +11,80 @@
 
 		function SlidePanelOpenFn(def) {
 
-			var deferreds = {
+			var events = {
 				opened: $q.defer(),
-				closed: $q.defer()
+				closed: $q.defer(),
+				beforeClose: null,
+				beforeDismiss: null
 			};
 
-			var promises = {
-				opened: deferreds.opened.promise,
-				closed: deferreds.closed.promise
+			var instance = {
+				elem: null,
+				scope: null,
+				closed: events.closed.promise,
+				opened: events.opened.promise,
+				close: RequestClose,
+				dismiss: RequestDismiss,
+				on: function (event, eventfn) { 
+					events[event] = eventfn; 
+					return this; 
+				}
 			};
+
+			function RequestClose(ret) {
+				if(angular.isFunction(events.beforeClose))
+					if(!events.beforeClose()) return false;
+				DestoryInstance();
+				events.closed.resolve(ret);
+				return true;
+			}
+
+			function RequestDismiss(ret) {
+				if(angular.isFunction(events.beforeDismiss))
+					if(!events.beforeDismiss()) return false;
+				DestoryInstance();
+				events.closed.reject(ret);
+				return true;
+			}
+
+			function DestoryInstance() {
+				instance.scope.$destroy();
+				instance.elem.remove();
+			}
+
+			function CreateInstance(template) {
+				var scope = instance.scope = $rootScope.$new();
+				scope._spInstance = instance;
+				var panelCtrl = $controller(def.controller, {
+					'$scope': scope,
+					'spInstance': instance
+				});
+
+				var elem = instance.elem = angular
+					.element('<div slidepanel></div>')
+					.attr({
+						'dismiss': '_spInstance.dismiss',
+						'size': def.size
+					})
+					.html(template);
+
+				$compile(elem)(scope);
+				var body = $document.find('body').eq(0);
+				body.append(elem);
+
+				events.opened.resolve();
+			}
+
+			function TemplateRequestFail(err) {
+				events.opened.reject(err);
+			}
 
 			$templateRequest(def.templateUrl)
-				.then(function(template) {
-					var body = $document.find('body').eq(0);
-					var panelElem = angular
-						.element('<div slidepanel></div>')
-						.attr({
-							'callbacks': '__deferreds',
-							'width': def.size
-						}).html(template);
+				.then(CreateInstance, TemplateRequestFail);
 
-					var scope = $rootScope.$new();
-					scope.__deferreds = deferreds;
-					var panelCtrl = $controller(def.controller, {
-						$scope: scope
-					});
-
-					var $panelElem = $compile(panelElem)(scope);
-
-					body.append($panelElem);
-
-				}, function() {
-
-					// TODO add more
-					deferreds.opened.reject();
-
-				});
-
-			return promises;
+			return instance;
 
 		}
-
-	})
-
-	.controller('slidepanelInnerCtrlTest', function($scope, $log) {
-		$scope.name = 'Henry';
-		$scope.print = function() {
-			$log.info("I'm here baby");
-		};
-	})
-
-	.controller('slidepanelCtrlTest', function($scope, slidepanelFactory) {
-
-		$scope.open = function() {
-
-			var slidepanelInstance = slidepanelFactory.open({
-				templateUrl: 'templates/testcontent.html',
-				controller: 'slidepanelInnerCtrlTest',
-				size: 500
-			});
-
-			slidepanelInstance.closed
-				.then(function(data) {
-					console.log("I was closed with " + data);
-				});
-
-		};
 
 	})
 
@@ -84,26 +92,27 @@
 		return {
 			restrict: 'A',
 			scope: {
-				width: '@',
-				callbacks: '&'
+				size: '@',
+				dismiss: '&dismiss'
 			},
 			transclude: true,
-			templateUrl: 'templates/slidepanels.html',
-			link: function(scope, element, attrs) {
-				scope.style = {
-					'width': attrs.width + 'px'
-				};
-			},
-			controller: function($scope, $element, $attrs, $log) {
-				var callbacks = $scope.callbacks();
-				callbacks.opened.resolve();
-				$scope.close = function() {
-					callbacks.closed.resolve('puppy');
-				};
+			link: function(scope, element, attrs, controller, transcludeFn) {
+				var panel = angular
+					.element('<div></div>')
+					.addClass('sp-panel sp-left')
+					.append(transcludeFn());
+				panel[0].style.width = attrs.size;
+
+				var dim = angular
+					.element('<div></div>')
+					.addClass('sp-dim sp-open')
+					.on('click', scope.dismiss());
+
+				element
+					.append(panel)
+					.append(dim);
 			}
 		};
 	});
-
-
 
 }(angular));
