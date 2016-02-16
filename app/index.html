@@ -8,20 +8,25 @@
 	<link rel="stylesheet" type="text/css" href="slidepanels.css">
 	
 	<script type="text/ng-template" id="templates/testcontent.html">
-		<span ng-click="print()">{{name}}, click me!</span>
-		<button ng-click="close('puppy')">Close me!</button>
+		<span ng-click="foo.print()">{{foo.name}}, click me!</span>
+		<button ng-click="foo.close('puppy')">Close me!</button>
 	</script>
 
 </head>
 <body ng-controller="slidepanelCtrlTest">
 	<div>Here is some content in the body of my application</div>
-	<button ng-click="open()">click me</button>
+	<button ng-click="open('left')">Open Left</button>
+	<button ng-click="open('right')">Open Right</button>
+	<button ng-click="open('top')">Open Top</button>
+	<button ng-click="open('bottom')">Open Bottom</button>
 
 	<script type="text/javascript">
 
 		angular.module('slidepanel-test', ['ui-slidepanel'])
 			
 			.controller('slidepanelInnerCtrlTest', function($scope, $window, $log, spInstance) {
+
+				var vm = this;
 
 				spInstance
 					.on('beforeClose', function(){
@@ -33,25 +38,26 @@
 						return true;
 					});
 
-				$scope.name = 'Henry';
+				vm.name = 'Henry';
 
-				$scope.print = function() {
+				vm.print = function() {
 					$log.info("I'm here baby");
 				};
 
-				$scope.close = function(ret) {
+				vm.close = function(ret) {
 					spInstance.close(ret);
 				};
 
 			})
 
-			.controller('slidepanelCtrlTest', function($scope, $window, slidepanelFactory) {
+			.controller('slidepanelCtrlTest', function($scope, $window, $timeout, slidepanelFactory) {
 
-				$scope.open = function() {
+				$scope.open = function(position) {
 
 					var slidepanel = slidepanelFactory.open({
 						templateUrl: 'templates/testcontent.html',
-						controller: 'slidepanelInnerCtrlTest',
+						controller: 'slidepanelInnerCtrlTest as foo',
+						position: position,
 						size: '500px'
 					});
 
@@ -68,9 +74,6 @@
 						}, function(val){ // Dismissed Result
 							$window.console.log("Dismissed with " + val);
 						});
-
-					// slidepanel.close('my return val');
-					// slidepanel.dismiss('my reason');
 
 				};
 

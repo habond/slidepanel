@@ -2,6 +2,10 @@
 	display:none;
 }
 
+.sp-overflow-hidden {
+	overflow:hidden;
+}
+
 .sp-dim.sp-open {
 	background:#000;
 	bottom:0;
@@ -26,8 +30,12 @@
 	z-index:1032;
 }
 
-.sp-panel.sp-left {
+.sp-panel.sp-left, .sp-panel.sp-right {
 	height:100%;
-	left: 0;
 	top: 0;
+}
+
+.sp-panel.sp-top, .sp-panel.sp-bottom {
+	width:100%;
+	left: 0;
 }
