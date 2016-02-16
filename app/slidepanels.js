@@ -55,7 +55,7 @@
 					instance.scope.$destroy();
 					instance.elem.remove();
 					body.removeClass('sp-overflow-hidden');
-				},500);
+				},300);
 			}
 
 			function CreateInstance(template) {
