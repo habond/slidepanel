@@ -55,16 +55,18 @@
 					instance.scope.$destroy();
 					instance.elem.remove();
 					body.removeClass('sp-overflow-hidden');
-				},300);
+				}, 300);
 			}
 
 			function CreateInstance(template) {
 				var scope = instance.scope = $rootScope.$new();
 				scope._spInstance = instance;
-				var panelCtrl = $controller(def.controller, {
+				var locals = {
 					'$scope': scope,
 					'spInstance': instance
-				});
+				};
+				angular.extend(locals, def.data || {});
+				var panelCtrl = $controller(def.controller, locals);
 
 				var elem = instance.elem = angular
 					.element('<div slidepanel></div>')
